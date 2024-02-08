@@ -1,0 +1,30 @@
+version: '3.9'
+
+name: "sync-graph"
+
+services:
+  perl-server:
+    depends_on:
+      - centrifugo
+    build: .
+    volumes:
+      - .:/usr/src/app
+#      - ./trackingDir:/usr/src/app/trackingDir
+#      - ./backUp:/usr/src/app/backUp
+    ports:
+      - 2323:3000
+    environment:
+      - PERL5LIB=/usr/src/app/lib:.
+    restart: unless-stopped
+
+  centrifugo:
+    image: centrifugo/centrifugo:v5.0.4
+    volumes:
+      - ./config.json:/centrifugo/config.json
+    command: centrifugo -c config.json --client_insecure
+    ports:
+      - 2324:8000
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535

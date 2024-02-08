@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<pre id="data">
+
+</pre>
+
+<script src="https://unpkg.com/centrifuge@5.0.1/dist/centrifuge.js"></script>
+<script type="text/javascript">
+    function getRequest(method) {
+        return fetch(
+            `http://localhost:2323/${method}`,
+            { method: "GET" }
+        )
+            .then(async response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const res = await response.json();
+                console.log(res);
+                return res;
+            })
+            .catch(error => {
+                console.error('There has been a problem with your fetch operation:', error);
+            });
+    }
+
+    function postRequest(method, data) {
+        return fetch(
+            `http://localhost:2323/${method}`,
+            {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: data ? JSON.stringify(data) : null
+            }
+        );
+    }
+
+    getRequest("").then(data => {
+        // const testNode = data.nodes.find(it => it.name === "Test.md");
+        //
+        // // const tagNode = data.nodes.find(it => it.name === "#tag2");
+        // // console.log(tagNode);
+        //
+        // const tagNode = {
+        //     type: "TAG",
+        //     id: "qwert",
+        //     name: "#tag4"
+        // }
+        // data.nodes.push(tagNode);
+        //
+        // const edge = { 'from': testNode.id, 'to': tagNode.id };
+        //
+        // // data.edges = data.edges.filter(it => !(it.from === edge.from && it.to === edge.to));
+        // data.edges.push(edge);
+        //
+        // setTimeout(() => postRequest("change", data), 100);
+
+
+        // setTimeout(() => postRequest("get-token"), 100);
+        setTimeout(() => getRequest("reset"), 100);
+
+        // setTimeout(() => getRequest(""), 100);
+    });
+
+    const container = document.getElementById('data');
+
+    const centrifuge = new Centrifuge("ws://localhost:2324/connection/websocket");
+
+    centrifuge
+        .on('connecting', function (ctx) {
+            console.log(`connecting: ${ctx.code}, ${ctx.reason}`);
+        })
+        .on('connected', function (ctx) {
+            console.log(`connected over ${ctx.transport}`);
+        })
+        .on('disconnected', function (ctx) {
+            console.log(`disconnected: ${ctx.code}, ${ctx.reason}`);
+        })
+        .connect();
+
+    const sub = centrifuge.newSubscription("channel");
+
+    sub
+        .on('publication', function (ctx) {
+            console.log("notification", ctx);
+            container.innerHTML = JSON.stringify(ctx.data.newMetadata, null, 2);
+        })
+        .on('subscribing', function (ctx) {
+            console.log(`subscribing: ${ctx.code}, ${ctx.reason}`);
+        })
+        .on('subscribed', function (ctx) {
+            console.log('subscribed', ctx);
+        })
+        .on('unsubscribed', function (ctx) {
+            console.log(`unsubscribed: ${ctx.code}, ${ctx.reason}`);
+        })
+        .subscribe();
+</script>
+</body>
+</html>
